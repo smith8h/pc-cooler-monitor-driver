@@ -32,7 +32,7 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          $version = '0.1.0'
+          $version = '1.0.0'
           if ($env:REF_TYPE -eq 'tag') {
             if ($env:REF_NAME -notmatch '^v(\d+\.\d+\.\d+)$') {
               throw 'Release tags must use vMAJOR.MINOR.PATCH, for example v1.0.0.'
@@ -112,6 +112,11 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
-          gh release create "$RELEASE_TAG" release/* --verify-tag \
-            --title "Zeus Display $RELEASE_TAG" --generate-notes \
-            --notes "Download the win-x64-Setup.exe installer below. .NET is bundled; WebView2 is installed automatically if missing (internet required). Install PawnIO separately: https://pawnio.eu/"
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json url > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release/* --verify-tag \
+              --title "Zeus Display $RELEASE_TAG" --generate-notes \
+              --notes "Download the win-x64-Setup.exe installer below. .NET is bundled; WebView2 is installed automatically if missing (internet required). Install PawnIO separately: https://pawnio.eu/"
+          fi

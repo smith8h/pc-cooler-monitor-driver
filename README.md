@@ -38,7 +38,7 @@ To change startup behavior, rerun setup and change its startup checkbox, or disa
 Release installers are currently unsigned. GitHub also provides `SHA256SUMS.txt` beside each installer for checking the downloaded file's SHA-256 hash:
 
 ```powershell
-Get-FileHash .\ZeusDisplay-0.1.0-win-x64-Setup.exe -Algorithm SHA256
+Get-FileHash .\ZeusDisplay-1.0.0-win-x64-Setup.exe -Algorithm SHA256
 ```
 
 ## Build from source
@@ -54,13 +54,13 @@ Launch `bin\Release\net10.0-windows\ZeusDisplay.exe` and approve elevation. Loca
 To build the release installer, also install [Inno Setup 6.3 or later](https://jrsoftware.org/isdl.php), then run:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 0.1.0
+.\scripts\Build-Release.ps1 -Version 1.0.0
 ```
 
 The build script publishes a self-contained `win-x64` app, downloads and verifies Microsoft's signed WebView2 bootstrapper, compiles the installer, and writes the setup EXE and checksum file to `artifacts\release`. It does not install the app or register startup on the build machine. To use a compiler in a custom location:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 0.1.0 -InnoCompiler 'C:\Tools\Inno Setup\ISCC.exe'
+.\scripts\Build-Release.ps1 -Version 1.0.0 -InnoCompiler 'C:\Tools\Inno Setup\ISCC.exe'
 ```
 
 ## GitHub Actions and releases
@@ -70,11 +70,11 @@ The [build workflow](.github/workflows/build.yml) runs on pushes, pull requests,
 To publish a release, push a version tag after committing these files to GitHub:
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
-Tags must use `vMAJOR.MINOR.PATCH`. After the build succeeds, the workflow creates the GitHub Release and attaches the setup EXE and `SHA256SUMS.txt`. Branch builds and manual runs produce downloadable Actions artifacts without publishing a release. The workflow uses GitHub's built-in `GITHUB_TOKEN`; no personal access token is required. Repository or organization policies must allow GitHub Actions and release creation.
+Tags must use `vMAJOR.MINOR.PATCH`. After the build succeeds, the workflow creates the GitHub Release and attaches the setup EXE and `SHA256SUMS.txt`. If the release already exists, it uploads the files to that release instead. Branch builds and manual runs produce downloadable Actions artifacts without publishing a release. The workflow uses GitHub's built-in `GITHUB_TOKEN`; no personal access token is required. Repository or organization policies must allow GitHub Actions and release creation.
 
 ## Troubleshooting
 

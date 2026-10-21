@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ZeusDisplay</AssemblyName>
     <RootNamespace>ZeusDisplay</RootNamespace>
+    <Version>1.0.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
