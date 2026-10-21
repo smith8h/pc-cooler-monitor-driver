@@ -21,6 +21,7 @@ internal static class Program
 internal sealed class TrayContext : ApplicationContext
 {
     private readonly Settings _settings = Settings.Load();
+    private readonly Icon _appIcon = new(typeof(TrayContext), "Assets.app.ico");
     private readonly NotifyIcon _icon;
     private readonly DisplayDevice _device = new();
     private readonly SensorReader _sensors = new();
@@ -41,7 +42,7 @@ internal sealed class TrayContext : ApplicationContext
 
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _appIcon,
             Visible = true,
             Text = "Zeus Display",
             ContextMenuStrip = menu
@@ -57,7 +58,7 @@ internal sealed class TrayContext : ApplicationContext
 
     private void ShowDashboard()
     {
-        _dashboard ??= new DashboardForm(_settings);
+        _dashboard ??= new DashboardForm(_settings) { Icon = _appIcon };
         _dashboard.ShowAndFocus();
     }
 
@@ -110,6 +111,7 @@ internal sealed class TrayContext : ApplicationContext
             _sensors.Dispose();
             _icon.Visible = false;
             _icon.Dispose();
+            _appIcon.Dispose();
         }
         base.Dispose(disposing);
     }

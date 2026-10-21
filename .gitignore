@@ -1,1 +1,14 @@
-obj
+# .NET build output and local IDE files
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Downloaded archives and incomplete downloads
+*.zip
+*.crdownload

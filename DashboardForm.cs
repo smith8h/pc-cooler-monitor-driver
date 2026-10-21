@@ -16,7 +16,6 @@ public sealed class DashboardForm : Form
     {
         _settings = settings;
         Text = "Zeus Display";
-        Icon = SystemIcons.Application;
         ClientSize = new Size(520, 660);
         MinimumSize = new Size(440, 560);
         StartPosition = FormStartPosition.CenterScreen;

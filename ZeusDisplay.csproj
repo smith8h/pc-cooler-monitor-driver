@@ -9,6 +9,7 @@
     <AssemblyName>ZeusDisplay</AssemblyName>
     <RootNamespace>ZeusDisplay</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
          dotnet add package HidSharp
          dotnet add package LibreHardwareMonitorLib -->
   <ItemGroup>
+    <EmbeddedResource Include="Assets\app.ico" />
     <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
