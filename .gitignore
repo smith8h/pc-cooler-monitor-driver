@@ -12,3 +12,6 @@ __pycache__/
 # Downloaded archives and incomplete downloads
 *.zip
 *.crdownload
+
+# Local release packages
+artifacts/

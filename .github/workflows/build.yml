@@ -1,0 +1,117 @@
+name: Build and release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Determine version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = '0.1.0'
+          if ($env:REF_TYPE -eq 'tag') {
+            if ($env:REF_NAME -notmatch '^v(\d+\.\d+\.\d+)$') {
+              throw 'Release tags must use vMAJOR.MINOR.PATCH, for example v1.0.0.'
+            }
+            $version = $Matches[1]
+          }
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Check dashboard JavaScript
+        run: |
+          node --check wwwroot/dashboard.js
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard JavaScript syntax check failed.' }
+          node scripts/Check-Dashboard.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard behavior checks failed.' }
+
+      - name: Install Inno Setup if missing
+        run: |
+          $compilerPaths = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 7\ISCC.exe"
+          )
+          if (-not ($compilerPaths | Where-Object { Test-Path -LiteralPath $_ })) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          }
+
+      - name: Build self-contained app and installer
+        run: ./scripts/Build-Release.ps1 -Version $env:APP_VERSION
+
+      - name: Validate Windows startup task definition
+        run: |
+          [xml]$task = (./installer/Startup.ps1 -Action Validate -InstallDirectory "$env:GITHUB_WORKSPACE\artifacts\publish") -join "`n"
+          if ($task.Task.Principals.Principal.LogonType -ne 'InteractiveToken' -or
+              $task.Task.Principals.Principal.RunLevel -ne 'HighestAvailable' -or
+              $task.Task.Actions.Exec.Arguments -ne '--tray' -or
+              $task.Task.Settings.ExecutionTimeLimit -ne 'PT0S') {
+            throw 'Invalid startup task definition.'
+          }
+
+      - name: Check silent setup and uninstall
+        run: |
+          ./scripts/Test-Installer.ps1 `
+            -InstallerPath "artifacts/release/ZeusDisplay-$env:APP_VERSION-win-x64-Setup.exe" `
+            -TestDirectory "$env:RUNNER_TEMP/ZeusDisplay-install-check"
+
+      - name: Upload installer check logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-check-logs
+          path: ${{ runner.temp }}/ZeusDisplay-install-check/*.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ZeusDisplay-win-x64-setup
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ZeusDisplay-win-x64-setup
+          path: release
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          gh release create "$RELEASE_TAG" release/* --verify-tag \
+            --title "Zeus Display $RELEASE_TAG" --generate-notes \
+            --notes "Download the win-x64-Setup.exe installer below. .NET is bundled; WebView2 is installed automatically if missing (internet required). Install PawnIO separately: https://pawnio.eu/"

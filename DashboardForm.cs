@@ -16,11 +16,11 @@ public sealed class DashboardForm : Form
     {
         _settings = settings;
         Text = "Zeus Display";
-        ClientSize = new Size(520, 660);
+        ClientSize = new Size(560, 740);
         MinimumSize = new Size(440, 560);
         StartPosition = FormStartPosition.CenterScreen;
 
-        BackColor = IsDarkTheme() ? Color.FromArgb(18, 21, 26) : Color.FromArgb(230, 233, 237);
+        BackColor = IsDarkTheme() ? Color.FromArgb(13, 18, 21) : Color.FromArgb(243, 245, 246);
         _web.DefaultBackgroundColor = BackColor;     // avoids a white flash before the page loads
         Controls.Add(_web);
 

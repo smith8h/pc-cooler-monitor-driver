@@ -1,476 +1,63 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Zeus Display</title>
-    <style>
-        :root {
-            color-scheme: light dark;
-            --bg: #E6E9ED;
-            --ink: #1B2026;
-            --muted: #566370;
-            --line: #C6CDD5;
-            --focus: #0A5BD8;
-            --ok: #128C93;
-            --off: #8D99A6;
-            --lcd: #090D11;
-            --lcd-line: #2A323B;
-            --lcd-text: #93A4B1;
-            --ghost: rgba(147, 164, 177, 0.10);
-            --cool: #5CE1E6;
-            --warm: #FFB224;
-            --hot: #FF5C4D;
-            --plain: #DCE6ED;
-            --font: "Bahnschrift", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #12151A;
-                --ink: #E8EDF1;
-                --muted: #8D99A6;
-                --line: #2A313A;
-                --focus: #7DB0FF;
-                --ok: #5CE1E6;
-                --lcd: #07090C;
-            }
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--ink);
-            font-family: var(--font);
-        }
-
-        body {
-            min-height: 100vh;
-            padding: 1.25rem;
-        }
-
-        main {
-            max-width: 34rem;
-            margin: 0 auto;
-            display: grid;
-            gap: 1.1rem;
-        }
-
-        header {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 1.15rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--off);
-        }
-
-        .status[data-ok="true"] .dot {
-            background: var(--ok);
-        }
-
-        .lcd {
-            background: var(--lcd);
-            border: 1px solid var(--lcd-line);
-            border-radius: 14px;
-            padding: 1.25rem 1.25rem 1rem;
-            color: var(--lcd-text);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), inset 0 12px 32px rgba(0, 0, 0, 0.55);
-        }
-
-        .reads {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-        }
-
-        .read {
-            --seg: var(--plain);
-        }
-
-        .line {
-            display: flex;
-            align-items: flex-end;
-            gap: 0.6rem;
-        }
-
-        .digits {
-            display: flex;
-            gap: 0.4rem;
-            transform: skewX(-7deg);
-            transform-origin: 0 100%;
-            filter: drop-shadow(0 0 7px color-mix(in srgb, var(--seg) 45%, transparent));
-        }
-
-        .d {
-            display: block;
-            height: clamp(56px, 13vw, 88px);
-            width: auto;
-            aspect-ratio: 3 / 5;
-        }
-
-        .d .on {
-            fill: var(--seg);
-        }
-
-        .d .off {
-            fill: var(--ghost);
-        }
-
-        .unit {
-            color: var(--seg);
-            font-size: 1.5rem;
-            font-weight: 600;
-            line-height: 1;
-            padding-bottom: 0.2rem;
-            min-width: 1.6em;
-        }
-
-        .cap {
-            margin: 0.55rem 0 0;
-            font-size: 0.85rem;
-        }
-
-        .chart-wrap {
-            margin-top: 1.1rem;
-            padding-top: 0.9rem;
-            border-top: 1px solid var(--lcd-line);
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 132px;
-        }
-
-        .legend {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-top: 0.6rem;
-            font-size: 0.8rem;
-        }
-
-        .key {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-
-        .swatch {
-            width: 14px;
-            height: 3px;
-            border-radius: 2px;
-            background: var(--plain);
-        }
-
-        .notice {
-            margin: 0;
-            padding: 0.7rem 0.9rem;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .settings {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .settings h2 {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .hint {
-            margin: 0.2rem 0 0;
-            color: var(--muted);
-            font-size: 0.85rem;
-        }
-
-        .seg {
-            display: inline-flex;
-            gap: 3px;
-            padding: 3px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-        }
-
-        .seg button {
-            font: inherit;
-            font-size: 0.95rem;
-            font-weight: 600;
-            min-width: 3.2rem;
-            padding: 0.45rem 1rem;
-            border: 0;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--muted);
-            background: none;
-        }
-
-        .seg button[aria-checked="true"] {
-            background: var(--ink);
-            color: var(--bg);
-        }
-
-        .seg button:focus-visible {
-            outline: 2px solid var(--focus);
-            outline-offset: 2px;
-        }
-
-        @media (max-width: 460px) {
-            .reads {
-                grid-template-columns: 1fr;
-            }
-
-            .settings {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="dashboard.js" defer></script>
 </head>
-
 <body>
+    <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="thermometer" viewBox="0 0 24 24"><path d="M9 14.8V5a3 3 0 0 1 6 0v9.8a5 5 0 1 1-6 0Z"/><path d="M12 8v10m0 0h.01"/></symbol>
+        <symbol id="processor" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4m14-6h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></symbol>
+        <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+        <symbol id="sliders" viewBox="0 0 24 24"><path d="M4 7h3m6 0h7M4 17h9m6 0h1"/><circle cx="10" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+    </svg>
     <main>
-        <header>
-            <h1>Zeus Display</h1>
-            <p class="status" id="status" data-ok="false"><span class="dot" aria-hidden="true"></span><span
-                    id="statusText">Starting</span></p>
+        <header class="header">
+            <div class="brand">
+                <img src="assets/app-icon.png" width="38" height="38" alt="">
+                <div><h1>Zeus Display</h1><p class="brand-caption">A little insight. In real time.</p></div>
+            </div>
+            <p class="status" id="status" data-state="starting" role="status"><span class="dot" aria-hidden="true"></span><span id="statusText">Starting</span></p>
         </header>
-
-        <section class="lcd" aria-label="Live readout, as shown on the cooler display">
-            <div class="reads">
-                <div class="read" id="tempRead">
-                    <div class="line">
-                        <div class="digits" id="tempDigits" role="img" aria-label="CPU temperature"></div>
-                        <span class="unit" id="tempUnit">&deg;C</span>
-                    </div>
-                    <p class="cap">CPU temperature</p>
-                </div>
-                <div class="read" id="useRead">
-                    <div class="line">
-                        <div class="digits" id="useDigits" role="img" aria-label="CPU usage"></div>
-                        <span class="unit">%</span>
-                    </div>
-                    <p class="cap">CPU usage</p>
-                </div>
-            </div>
-
+        <div class="intro"><h2>System overview</h2><p>Your processor, at a glance.</p></div>
+        <section class="metrics" aria-label="Live CPU readings">
+            <article class="metric temperature" id="tempRead">
+                <h3><svg class="icon" aria-hidden="true"><use href="#thermometer"/></svg>Temperature</h3>
+                <div class="reading"><span id="tempValue">—</span><span class="unit" id="tempUnit">°C</span></div>
+                <div class="meter" aria-hidden="true"><span id="tempMeter"></span></div>
+                <div class="metric-caption"><span class="metric-dot" aria-hidden="true"></span><span id="tempCaption">Waiting for sensor</span></div>
+            </article>
+            <article class="metric" id="useRead">
+                <h3><svg class="icon" aria-hidden="true"><use href="#processor"/></svg>CPU usage</h3>
+                <div class="reading"><span id="useValue">—</span><span class="unit">%</span></div>
+                <div class="meter" aria-hidden="true"><span id="useMeter"></span></div>
+                <div class="metric-caption" id="useCaption">Waiting for sensor</div>
+            </article>
+        </section>
+        <section class="activity panel" aria-labelledby="activityTitle">
+            <div class="panel-heading"><h2 id="activityTitle">Recent activity</h2><span class="period">Last 60 seconds</span></div>
             <div class="chart-wrap">
-                <canvas id="chart" role="img" aria-label="Temperature and usage over the last minute"></canvas>
-                <div class="legend">
-                    <span class="key"><span class="swatch" id="tempSwatch"></span>Temperature <span
-                            id="tempRange"></span></span>
-                    <span class="key"><span class="swatch"></span>Usage <span id="useRange"></span></span>
-                </div>
+                <canvas id="chart" role="img" aria-label="CPU temperature and usage over the last 60 seconds"></canvas>
+                <p id="chartEmpty" class="chart-empty">Collecting readings…</p>
+            </div>
+            <div class="chart-axis" aria-hidden="true"><span>60s ago</span><span>Now</span></div>
+            <div class="legend">
+                <div><span class="key"><i id="tempSwatch"></i>Temperature</span><span class="range" id="tempRange">—</span></div>
+                <div><span class="key usage-key"><i></i>CPU usage</span><span class="range" id="useRange">—</span></div>
             </div>
         </section>
-
-        <p class="notice" id="notice" hidden></p>
-
-        <section class="settings">
-            <div>
-                <h2>Temperature unit</h2>
-                <p class="hint">Applies to the cooler display and this window.</p>
-            </div>
+        <aside class="notice" id="notice" hidden role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p id="noticeText"></p></aside>
+        <section class="settings panel" aria-labelledby="unitTitle">
+            <div class="setting-label"><span class="setting-icon"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg></span><div><h2 id="unitTitle">Temperature unit</h2><p>Display &amp; dashboard</p></div></div>
             <div class="seg" role="radiogroup" aria-label="Temperature unit">
-                <button type="button" role="radio" aria-checked="true" data-unit="C">&deg;C</button>
-                <button type="button" role="radio" aria-checked="false" data-unit="F">&deg;F</button>
+                <button type="button" role="radio" aria-checked="true" tabindex="0" data-unit="C" aria-label="Celsius">°C</button>
+                <button type="button" role="radio" aria-checked="false" tabindex="-1" data-unit="F" aria-label="Fahrenheit">°F</button>
             </div>
         </section>
+        <footer><span class="footer-dot" aria-hidden="true"></span>Close the window. Monitoring stays in your tray.</footer>
     </main>
-
-    <script>
-        (() => {
-            const host = window.chrome && window.chrome.webview;   // present inside the ZeusDisplay window
-            const $ = id => document.getElementById(id);
-            const S = { temp: 0, usage: 0, connected: false, fahrenheit: false };   // temp is always Celsius
-            const hist = [];
-            let lastSample = 0;
-            let live = !host;
-            const cache = {};
-
-            // <digit-start>
-            const SEGMENTS = {
-                '0': 'abcdef', '1': 'bc', '2': 'abdeg', '3': 'abcdg', '4': 'bcfg',
-                '5': 'acdfg', '6': 'acdefg', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg',
-                '-': 'g', ' ': ''
-            };
-            const T = 9;
-            const hseg = (cx, cy, L) => {
-                const a = L / 2, t = T / 2;
-                return `${cx - a},${cy} ${cx - a + t},${cy - t} ${cx + a - t},${cy - t} ${cx + a},${cy} ${cx + a - t},${cy + t} ${cx - a + t},${cy + t}`;
-            };
-            const vseg = (cx, cy, L) => {
-                const a = L / 2, t = T / 2;
-                return `${cx},${cy - a} ${cx + t},${cy - a + t} ${cx + t},${cy + a - t} ${cx},${cy + a} ${cx - t},${cy + a - t} ${cx - t},${cy - a + t}`;
-            };
-            const GEO = {
-                a: hseg(30, 5, 42), g: hseg(30, 50, 42), d: hseg(30, 95, 42),
-                f: vseg(5, 27.5, 38), b: vseg(55, 27.5, 38), e: vseg(5, 72.5, 38), c: vseg(55, 72.5, 38)
-            };
-            function digit(ch) {
-                const on = SEGMENTS[ch] || '';
-                let s = '<svg class="d" viewBox="0 0 60 100" aria-hidden="true">';
-                for (const k of 'abcdefg') s += `<polygon class="${on.includes(k) ? 'on' : 'off'}" points="${GEO[k]}"/>`;
-                return s + '</svg>';
-            }
-            // <digit-end>
-
-            function readout(v) {
-                const s = (typeof v === 'string' ? v : String(Math.min(999, Math.max(0, v)))).padStart(3, ' ');
-                return [...s].map(digit).join('');
-            }
-            const setHtml = (id, html) => { if (cache[id] !== html) { cache[id] = html; $(id).innerHTML = html; } };
-            const setText = (id, text) => { if (cache[id] !== text) { cache[id] = text; $(id).textContent = text; } };
-            const tempColorName = c => (c < 60 ? 'cool' : c < 80 ? 'warm' : 'hot');
-            const toUnit = c => (S.fahrenheit ? c * 9 / 5 + 32 : c);
-
-            function sample() {
-                const now = Date.now();
-                if (now - lastSample < 1000) return;
-                lastSample = now;
-                hist.push({ t: S.temp, u: S.usage });
-                if (hist.length > 60) hist.shift();
-            }
-
-            function drawChart() {
-                const cv = $('chart');
-                const dpr = window.devicePixelRatio || 1;
-                const w = cv.clientWidth, h = cv.clientHeight;
-                if (!w || !h) return;
-                const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
-                if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
-                const g = cv.getContext('2d');
-                g.setTransform(dpr, 0, 0, dpr, 0, 0);
-                g.clearRect(0, 0, w, h);
-                const css = getComputedStyle(document.documentElement);
-                const v = n => css.getPropertyValue(n).trim();
-                const padY = 6, plotH = h - padY * 2;
-                g.lineWidth = 1;
-                g.strokeStyle = v('--lcd-line');
-                for (const f of [0, 0.5, 1]) {
-                    const y = Math.round(padY + plotH * f) + 0.5;
-                    g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
-                }
-                if (hist.length < 2) return;
-                const step = w / 59, x0 = w - (hist.length - 1) * step;
-                const line = (key, color) => {
-                    g.beginPath(); g.lineWidth = 2; g.lineJoin = 'round'; g.strokeStyle = color;
-                    hist.forEach((p, i) => {
-                        const frac = Math.min(1, Math.max(0, p[key] / 100));   // temperature plots as its Celsius value on a 0 to 100 scale
-                        const x = x0 + i * step, y = padY + plotH * (1 - frac);
-                        if (i) g.lineTo(x, y); else g.moveTo(x, y);
-                    });
-                    g.stroke();
-                };
-                line('u', v('--lcd-text'));
-                line('t', v('--' + tempColorName(S.temp)));
-            }
-
-            function render() {
-                const hasTemp = S.temp > 0;
-                const shown = Math.round(toUnit(S.temp));
-                const unit = S.fahrenheit ? 'F' : 'C';
-                const colorName = hasTemp ? tempColorName(S.temp) : 'plain';
-
-                setHtml('tempDigits', readout(hasTemp ? shown : '---'));
-                setHtml('useDigits', readout(Math.round(S.usage)));
-                $('tempRead').style.setProperty('--seg', `var(--${colorName})`);
-                $('tempSwatch').style.background = `var(--${colorName})`;
-                setText('tempUnit', '\u00B0' + unit);
-                $('tempDigits').setAttribute('aria-label', hasTemp ? `CPU temperature ${shown} degrees ${S.fahrenheit ? 'Fahrenheit' : 'Celsius'}` : 'CPU temperature unavailable');
-                $('useDigits').setAttribute('aria-label', `CPU usage ${Math.round(S.usage)} percent`);
-
-                const temps = hist.map(p => p.t).filter(t => t > 0).map(toUnit);
-                const uses = hist.map(p => p.u);
-                setText('tempRange', temps.length ? `${Math.round(Math.min(...temps))} to ${Math.round(Math.max(...temps))}\u00B0${unit}` : '');
-                setText('useRange', uses.length ? `${Math.round(Math.min(...uses))} to ${Math.round(Math.max(...uses))}%` : '');
-
-                let msg = '';
-                if (!live) {
-                    setText('statusText', 'Starting');
-                } else {
-                    $('status').dataset.ok = String(S.connected);
-                    setText('statusText', S.connected ? 'Display connected' : 'Display not found');
-                    if (!S.connected) msg = 'Plug in the cooler\u2019s USB cable. The app keeps looking and connects on its own.';
-                    else if (!hasTemp) msg = 'The CPU temperature reads zero. Install PawnIO and run the app as administrator.';
-                }
-                $('notice').hidden = !msg;
-                setText('notice', msg);
-
-                document.querySelectorAll('.seg button').forEach(b =>
-                    b.setAttribute('aria-checked', String((b.dataset.unit === 'F') === S.fahrenheit)));
-                drawChart();
-            }
-
-            document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-                S.fahrenheit = b.dataset.unit === 'F';
-                if (host) host.postMessage({ type: 'setUnit', fahrenheit: S.fahrenheit });
-                render();
-            }));
-
-            if (host) {
-                host.addEventListener('message', e => {
-                    const m = e.data;
-                    if (!m || m.type !== 'state') return;
-                    live = true;
-                    S.temp = Number(m.temp) || 0;
-                    S.usage = Number(m.usage) || 0;
-                    S.connected = !!m.connected;
-                    S.fahrenheit = !!m.fahrenheit;
-                    sample();
-                    render();
-                });
-            } else {
-                // Opened in a normal browser: show moving demo data so the layout can be previewed.
-                let t = 42, u = 8;
-                setInterval(() => {
-                    t = Math.max(30, Math.min(88, t + (Math.random() - 0.48) * 2));
-                    u = Math.max(1, Math.min(100, u + (Math.random() - 0.5) * 14));
-                    Object.assign(S, { temp: t, usage: u, connected: true });
-                    sample();
-                    render();
-                }, 250);
-            }
-
-            new ResizeObserver(drawChart).observe($('chart'));
-            render();
-        })();
-    </script>
 </body>
-
 </html>
