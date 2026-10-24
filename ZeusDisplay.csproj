@@ -13,7 +13,8 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <!-- Lean runtime: no ICU, no background GC thread, no PGO instrumentation, English-only satellite files. -->
+  <!-- Lean runtime: no ICU, no background GC thread, no PGO instrumentation, English-only satellite
+  files. -->
   <PropertyGroup>
     <InvariantGlobalization>true</InvariantGlobalization>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>

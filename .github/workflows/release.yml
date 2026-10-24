@@ -81,14 +81,26 @@ jobs:
           name: ZeusDisplay-installers
           path: dist/*
 
-      - name: Create GitHub release
+      - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "${{ github.ref_name }}"
-          "dist/ZeusDisplay-Setup-${{ steps.ver.outputs.version }}.exe"
-          "dist/ZeusDisplay-Lite-Setup-${{ steps.ver.outputs.version }}.exe"
-          "dist/SHA256SUMS.txt"
-          --title "Zeus Display ${{ github.ref_name }}" --generate-notes
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $files = @(
+            "dist/ZeusDisplay-Setup-$env:VERSION.exe",
+            "dist/ZeusDisplay-Lite-Setup-$env:VERSION.exe",
+            "dist/SHA256SUMS.txt"
+          )
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $env:TAG already exists (created by hand). Attaching the installers to it."
+            gh release upload $env:TAG @files --clobber
+          } else {
+            gh release create $env:TAG @files --title "Zeus Display $env:TAG" --generate-notes
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh failed with exit code $LASTEXITCODE" }
+          
