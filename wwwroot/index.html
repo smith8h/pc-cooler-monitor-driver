@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,55 +10,102 @@
     <link rel="stylesheet" href="dashboard.css">
     <script src="dashboard.js" defer></script>
 </head>
+
 <body>
     <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <symbol id="thermometer" viewBox="0 0 24 24"><path d="M9 14.8V5a3 3 0 0 1 6 0v9.8a5 5 0 1 1-6 0Z"/><path d="M12 8v10m0 0h.01"/></symbol>
-        <symbol id="processor" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4m14-6h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></symbol>
-        <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
-        <symbol id="sliders" viewBox="0 0 24 24"><path d="M4 7h3m6 0h7M4 17h9m6 0h1"/><circle cx="10" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
-        <symbol id="activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
-        <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
-        <symbol id="moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></symbol>
-        <symbol id="auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/></symbol>
+        <symbol id="thermometer" viewBox="0 0 24 24">
+            <path d="M9 14.8V5a3 3 0 0 1 6 0v9.8a5 5 0 1 1-6 0Z" />
+            <path d="M12 8v10m0 0h.01" />
+        </symbol>
+        <symbol id="processor" viewBox="0 0 24 24">
+            <rect x="5" y="5" width="14" height="14" rx="3" />
+            <path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4m14-6h4m-4 6h4" />
+            <rect x="9" y="9" width="6" height="6" rx="1" />
+        </symbol>
+        <symbol id="info" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 11v6m0-10h.01" />
+        </symbol>
+        <symbol id="monitor" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="12" rx="2" />
+            <path d="M8 20h8m-4-4v4" />
+        </symbol>
+        <symbol id="activity" viewBox="0 0 24 24">
+            <path d="M3 12h4l3-8 4 16 3-8h4" />
+        </symbol>
+        <symbol id="sun" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4" />
+            <path
+                d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </symbol>
+        <symbol id="moon" viewBox="0 0 24 24">
+            <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" />
+        </symbol>
+        <symbol id="auto" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" />
+        </symbol>
     </svg>
 
     <main>
         <header class="header">
             <div class="brand">
-                <img src="assets/app-icon.png" width="40" height="40" alt="">
-                <div><h1>Zeus Display</h1><p class="brand-caption">A little insight. In real time.</p></div>
+                <img src="assets/app-icon.png" width="38" height="38" alt="">
+                <div>
+                    <h1>Zeus Display</h1>
+                    <p class="brand-caption">A little insight. In real time.</p>
+                </div>
             </div>
-            <p class="status" id="status" data-state="starting" role="status"><span class="dot" aria-hidden="true"></span><span id="statusText">Starting</span></p>
+            <p class="status" id="status" data-state="starting" role="status"><span class="dot"
+                    aria-hidden="true"></span><span id="statusText">Starting</span></p>
         </header>
 
-        <div class="intro"><h2>System overview</h2><p>Your processor, at a glance.</p></div>
+        <div class="intro">
+            <h2>System overview</h2>
+            <p>Your processor, at a glance.</p>
+        </div>
 
         <div class="grid">
             <article class="card gauge-card" id="tempCard">
-                <h3 class="card-title"><svg class="icon" aria-hidden="true"><use href="#thermometer"/></svg>Temperature</h3>
+                <h3 class="card-title"><svg class="icon" aria-hidden="true">
+                        <use href="#thermometer" />
+                    </svg>Temperature</h3>
                 <div class="gauge">
                     <svg viewBox="0 0 160 160" aria-hidden="true" id="tempGauge">
-                        <circle class="ring-track" cx="80" cy="80" r="62" transform="rotate(135 80 80)"/>
-                        <circle class="ring-value" id="tempArc" cx="80" cy="80" r="62" transform="rotate(135 80 80)"/>
+                        <circle class="ring-track" cx="80" cy="80" r="62" transform="rotate(135 80 80)" />
+                        <circle class="ring-value" id="tempArc" cx="80" cy="80" r="62" transform="rotate(135 80 80)" />
                     </svg>
                     <div class="gauge-read">
-                        <div class="reading"><span id="tempValue">&mdash;</span><span class="unit" id="tempUnit">&deg;C</span></div>
-                        <div class="caption"><span class="caption-dot" aria-hidden="true"></span><span id="tempCaption">Waiting for sensor</span></div>
+                        <div class="reading"><span id="tempValue">&mdash;</span><span class="unit"
+                                id="tempUnit">&deg;C</span></div>
+                        <div class="caption"><span class="caption-dot" aria-hidden="true"></span><span
+                                id="tempCaption">Waiting for sensor</span></div>
                     </div>
                 </div>
                 <dl class="stats" aria-label="Temperature, last 60 seconds">
-                    <div><dt>Low</dt><dd id="tempMin">&mdash;</dd></div>
-                    <div><dt>Average</dt><dd id="tempAvg">&mdash;</dd></div>
-                    <div><dt>High</dt><dd id="tempMax">&mdash;</dd></div>
+                    <div>
+                        <dt>Low</dt>
+                        <dd id="tempMin">&mdash;</dd>
+                    </div>
+                    <div>
+                        <dt>Average</dt>
+                        <dd id="tempAvg">&mdash;</dd>
+                    </div>
+                    <div>
+                        <dt>High</dt>
+                        <dd id="tempMax">&mdash;</dd>
+                    </div>
                 </dl>
             </article>
 
             <article class="card gauge-card" id="useCard">
-                <h3 class="card-title"><svg class="icon" aria-hidden="true"><use href="#processor"/></svg>CPU usage</h3>
+                <h3 class="card-title"><svg class="icon" aria-hidden="true">
+                        <use href="#processor" />
+                    </svg>CPU usage</h3>
                 <div class="gauge">
                     <svg viewBox="0 0 160 160" aria-hidden="true" id="useGauge">
-                        <circle class="ring-track" cx="80" cy="80" r="62" transform="rotate(135 80 80)"/>
-                        <circle class="ring-value" id="useArc" cx="80" cy="80" r="62" transform="rotate(135 80 80)"/>
+                        <circle class="ring-track" cx="80" cy="80" r="62" transform="rotate(135 80 80)" />
+                        <circle class="ring-value" id="useArc" cx="80" cy="80" r="62" transform="rotate(135 80 80)" />
                     </svg>
                     <div class="gauge-read">
                         <div class="reading"><span id="useValue">&mdash;</span><span class="unit">%</span></div>
@@ -65,28 +113,58 @@
                     </div>
                 </div>
                 <dl class="stats" aria-label="CPU usage, last 60 seconds">
-                    <div><dt>Low</dt><dd id="useMin">&mdash;</dd></div>
-                    <div><dt>Average</dt><dd id="useAvg">&mdash;</dd></div>
-                    <div><dt>High</dt><dd id="useMax">&mdash;</dd></div>
+                    <div>
+                        <dt>Low</dt>
+                        <dd id="useMin">&mdash;</dd>
+                    </div>
+                    <div>
+                        <dt>Average</dt>
+                        <dd id="useAvg">&mdash;</dd>
+                    </div>
+                    <div>
+                        <dt>High</dt>
+                        <dd id="useMax">&mdash;</dd>
+                    </div>
                 </dl>
             </article>
 
             <section class="card control" aria-labelledby="settingsTitle">
-                <h3 class="card-title" id="settingsTitle"><svg class="icon" aria-hidden="true"><use href="#sliders"/></svg>Settings</h3>
+                <h3 class="card-title" id="settingsTitle"><svg class="icon" aria-hidden="true">
+                        <use href="#monitor" />
+                    </svg>Cooler display</h3>
+                <div class="device">
+                    <p class="device-line"><span class="device-dot" aria-hidden="true"></span><span
+                            id="deviceText">Starting</span></p>
+                    <p class="device-id">USB 5131:2007</p>
+                    <p class="notice" id="notice" hidden role="status"><svg class="icon" aria-hidden="true">
+                            <use href="#info" />
+                        </svg><span id="noticeText"></span></p>
+                </div>
                 <div class="rows">
                     <div class="row">
-                        <div class="row-label"><h4 id="unitTitle">Temperature unit</h4><p>Shown on the cooler and here</p></div>
+                        <h4 id="unitTitle">Temperature unit</h4>
                         <div class="seg" role="radiogroup" aria-labelledby="unitTitle" id="unitGroup">
-                            <button type="button" role="radio" aria-checked="true" tabindex="0" data-unit="C" aria-label="Celsius">&deg;C</button>
-                            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-unit="F" aria-label="Fahrenheit">&deg;F</button>
+                            <button type="button" role="radio" aria-checked="true" tabindex="0" data-unit="C"
+                                aria-label="Celsius">&deg;C</button>
+                            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-unit="F"
+                                aria-label="Fahrenheit">&deg;F</button>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="row-label"><h4 id="themeTitle">Appearance</h4><p>Auto follows Windows</p></div>
+                        <h4 id="themeTitle">Appearance</h4>
                         <div class="seg" role="radiogroup" aria-labelledby="themeTitle" id="themeGroup">
-                            <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-option="system"><svg class="icon" aria-hidden="true"><use href="#auto"/></svg>Auto</button>
-                            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-option="light"><svg class="icon" aria-hidden="true"><use href="#sun"/></svg>Light</button>
-                            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-option="dark"><svg class="icon" aria-hidden="true"><use href="#moon"/></svg>Dark</button>
+                            <button type="button" role="radio" aria-checked="true" tabindex="0"
+                                data-theme-option="system" title="Follow Windows"><svg class="icon" aria-hidden="true">
+                                    <use href="#auto" />
+                                </svg>Auto</button>
+                            <button type="button" role="radio" aria-checked="false" tabindex="-1"
+                                data-theme-option="light"><svg class="icon" aria-hidden="true">
+                                    <use href="#sun" />
+                                </svg>Light</button>
+                            <button type="button" role="radio" aria-checked="false" tabindex="-1"
+                                data-theme-option="dark"><svg class="icon" aria-hidden="true">
+                                    <use href="#moon" />
+                                </svg>Dark</button>
                         </div>
                     </div>
                 </div>
@@ -94,23 +172,29 @@
 
             <section class="card activity" aria-labelledby="activityTitle">
                 <div class="card-head">
-                    <h3 class="card-title" id="activityTitle"><svg class="icon" aria-hidden="true"><use href="#activity"/></svg>Recent activity</h3>
-                    <span class="period" id="period">Last 60 seconds</span>
+                    <h3 class="card-title" id="activityTitle"><svg class="icon" aria-hidden="true">
+                            <use href="#activity" />
+                        </svg>Recent activity</h3>
+                    <div class="legend">
+                        <span class="legend-item"><span class="key"><i id="tempSwatch"></i>Temperature</span><b
+                                id="tempRange">&mdash;</b></span>
+                        <span class="legend-item"><span class="key usage-key"><i></i>CPU usage</span><b
+                                id="useRange">&mdash;</b></span>
+                        <span class="period" id="period">Last 60 seconds</span>
+                    </div>
                 </div>
                 <div class="chart-wrap">
-                    <canvas id="chart" role="img" aria-label="CPU temperature and usage over the last 60 seconds"></canvas>
+                    <canvas id="chart" role="img"
+                        aria-label="CPU temperature and usage over the last 60 seconds"></canvas>
                     <p id="chartEmpty" class="chart-empty">Collecting readings&hellip;</p>
                 </div>
                 <div class="chart-axis" aria-hidden="true"><span>60s ago</span><span>30s</span><span>Now</span></div>
-                <div class="legend">
-                    <div><span class="key"><i id="tempSwatch"></i>Temperature</span><span class="range" id="tempRange">&mdash;</span></div>
-                    <div><span class="key usage-key"><i></i>CPU usage</span><span class="range" id="useRange">&mdash;</span></div>
-                </div>
             </section>
         </div>
 
-        <aside class="notice" id="notice" hidden role="status"><svg class="icon" aria-hidden="true"><use href="#info"/></svg><p id="noticeText"></p></aside>
-        <footer><span class="footer-dot" aria-hidden="true"></span>Close the window. Monitoring stays in your tray.</footer>
+        <footer><span class="footer-dot" aria-hidden="true"></span>Close the window. Monitoring stays in your tray.
+        </footer>
     </main>
 </body>
+
 </html>

@@ -192,8 +192,11 @@
         setText('useRange', uses.length ? `${Math.round(Math.min(...uses))}\u2013${Math.round(Math.max(...uses))} %` : '\u2014');
         $('chartEmpty').hidden = history.length >= 2;
 
-        $('status').dataset.state = !live ? 'starting' : state.connected ? 'connected' : 'disconnected';
+        const link = !live ? 'starting' : state.connected ? 'connected' : 'disconnected';
+        $('status').dataset.state = link;
+        $('deviceText').closest('.device').dataset.state = link;
         setText('statusText', !live ? 'Starting' : state.connected ? 'Connected' : 'Not connected');
+        setText('deviceText', !live ? 'Starting' : state.connected ? 'Sending live readings to the cooler' : 'Cooler screen not found');
         let notice = '';
         if (live && !state.connected) notice = 'Connect the cooler\u2019s USB cable. Zeus will reconnect automatically.';
         else if (live && !hasTemp) notice = 'CPU temperature is unavailable. Install PawnIO separately and run Zeus Display as administrator.';
