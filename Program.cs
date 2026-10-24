@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace ZeusDisplay;
@@ -20,12 +21,19 @@ internal static class Program
 
 internal sealed class TrayContext : ApplicationContext
 {
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentProcess();
+
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimum, IntPtr maximum);
+
     private readonly Settings _settings = Settings.Load();
     private readonly Icon _appIcon = new(typeof(TrayContext), "Assets.app.ico");
     private readonly NotifyIcon _icon;
     private readonly DisplayDevice _device = new();
     private readonly SensorReader _sensors = new();
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 250 };
+    private readonly System.Windows.Forms.Timer _trimTimer = new() { Interval = 3000 };
 
     private DashboardForm? _dashboard;
     private Reading _last;
@@ -49,16 +57,26 @@ internal sealed class TrayContext : ApplicationContext
         };
         _icon.DoubleClick += (_, _) => ShowDashboard();
 
+        _trimTimer.Tick += (_, _) => { _trimTimer.Stop(); TrimMemory(); };
+
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
         _timer.Tick += OnTick;
         _timer.Start();
 
-        if (!startInTray) ShowDashboard();
+        if (startInTray) ScheduleTrim(); else ShowDashboard();
     }
 
     private void ShowDashboard()
     {
-        _dashboard ??= new DashboardForm(_settings) { Icon = _appIcon };
+        if (_dashboard == null || _dashboard.IsDisposed)
+        {
+            _dashboard = new DashboardForm(_settings) { Icon = _appIcon };
+            _dashboard.FormClosed += (_, _) =>
+            {
+                _dashboard = null;      // window and its WebView2 processes are gone; the tray app stays
+                ScheduleTrim();
+            };
+        }
         _dashboard.ShowAndFocus();
     }
 
@@ -71,22 +89,16 @@ internal sealed class TrayContext : ApplicationContext
 
     private void OnTick(object? sender, EventArgs e)
     {
-        if (_tick++ % 4 == 0) _last = _sensors.Read();      // sensors ~1/s, frames ~4/s
+        bool secondTick = _tick++ % 4 == 0;                 // sensors, tray text and dashboard once a second
+        if (secondTick) _last = _sensors.Read();
 
-        if (!_device.IsOpen)
-        {
-            if (DateTime.Now < _nextOpenAttempt) { _dashboard?.Push(_last, false); return; }
-            if (!_device.TryOpen())
-            {
-                _nextOpenAttempt = DateTime.Now.AddSeconds(2);
-                SetText("Display not found");
-                _dashboard?.Push(_last, false);
-                return;
-            }
-        }
+        if (!_device.IsOpen && DateTime.Now >= _nextOpenAttempt && !_device.TryOpen())
+            _nextOpenAttempt = DateTime.Now.AddSeconds(2);
 
-        bool sent = _device.Send(Protocol.BuildFrame(_last, _settings.Fahrenheit));
-        SetText(sent ? TrayText() : "Display write failed");
+        bool sent = _device.IsOpen && _device.Send(Protocol.BuildFrame(_last, _settings.Fahrenheit));   // frames ~4/s
+
+        if (!secondTick) return;
+        SetText(sent ? TrayText() : _device.IsOpen ? "Display write failed" : "Display not found");
         _dashboard?.Push(_last, sent);
     }
 
@@ -96,7 +108,25 @@ internal sealed class TrayContext : ApplicationContext
         return $"CPU {t:0}\u00B0{(_settings.Fahrenheit ? 'F' : 'C')}  {_last.CpuUsage:0}%";
     }
 
-    private void SetText(string text) => _icon.Text = text.Length > 63 ? text[..63] : text;
+    private void SetText(string text)
+    {
+        text = text.Length > 63 ? text[..63] : text;
+        if (_icon.Text != text) _icon.Text = text;
+    }
+
+    private void ScheduleTrim() { _trimTimer.Stop(); _trimTimer.Start(); }
+
+    /// <summary>
+    /// Returns unused pages to Windows so the number Task Manager shows is the real working set.
+    /// Pages that are needed again are simply loaded back on demand.
+    /// </summary>
+    private static void TrimMemory()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        SetProcessWorkingSetSize(GetCurrentProcess(), (IntPtr)(-1), (IntPtr)(-1));
+    }
 
     protected override void Dispose(bool disposing)
     {
@@ -104,6 +134,7 @@ internal sealed class TrayContext : ApplicationContext
         {
             _disposed = true;
             _timer.Stop();
+            _trimTimer.Stop();
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _dashboard?.Dispose();
             _device.Send(Protocol.ShutdownFrame());         // same idle packet the vendor app sends

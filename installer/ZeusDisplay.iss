@@ -1,134 +1,122 @@
+; Inno Setup script. CI builds two installers from it:
+;   ISCC /DAppVersion=1.0.0 installer\ZeusDisplay.iss          full installer: bundles .NET, works offline
+;   ISCC /DAppVersion=1.0.0 /DLite installer\ZeusDisplay.iss   lite installer: uses the installed .NET 10 Desktop Runtime
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "0.0.0"
 #endif
-#ifndef PublishDir
-  #define PublishDir SourcePath + "..\artifacts\publish"
-#endif
-#ifndef BootstrapperPath
-  #define BootstrapperPath SourcePath + "..\artifacts\dependencies\MicrosoftEdgeWebview2Setup.exe"
-#endif
-#ifndef OutputDirectory
-  #define OutputDirectory SourcePath + "..\artifacts\release"
+#define AppName "Zeus Display"
+#define AppExe  "ZeusDisplay.exe"
+#ifdef Lite
+  #define PublishDir "..\publish-lite"
+  #define SetupName  "ZeusDisplay-Lite-Setup-" + AppVersion
+#else
+  #define PublishDir "..\publish"
+  #define SetupName  "ZeusDisplay-Setup-" + AppVersion
 #endif
 
 [Setup]
-AppId={{A38A0699-4777-4D4B-A372-AF7BB31B6DA5}
-AppName=Zeus Display
+AppId={{4EC1C59C-4CCA-475D-B7C7-BE3EA5E03767}
+AppName={#AppName}
 AppVersion={#AppVersion}
-AppPublisher=Zeus Display
-DefaultDirName={autopf}\Zeus Display
-DefaultGroupName=Zeus Display
+AppPublisher=smith8h
+AppPublisherURL=https://github.com/smith8h/zeus-display
+DefaultDirName={autopf}\ZeusDisplay
+DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-DisableWelcomePage=no
-PrivilegesRequired=admin
+UninstallDisplayIcon={app}\{#AppExe}
+OutputDir=..\dist
+OutputBaseFilename={#SetupName}
+Compression=lzma2/ultra64
+SolidCompression=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-MinVersion=10.0.19045
-AppMutex=Global\ZeusDisplay.SingleInstance
-SetupMutex=ZeusDisplay.Setup
-SetupIconFile=..\Assets\app.ico
-UninstallDisplayIcon={app}\ZeusDisplay.exe
+PrivilegesRequired=admin
 WizardStyle=modern
-Compression=lzma2
-SolidCompression=yes
-OutputDir={#OutputDirectory}
-OutputBaseFilename=ZeusDisplay-{#AppVersion}-win-x64-Setup
-VersionInfoVersion={#AppVersion}
+InfoAfterFile=after-install.txt
 
-[Tasks]
-Name: "startup"; Description: "Start Zeus Display when I sign in to Windows"; GroupDescription: "Startup:"; Flags: checkedonce
-Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
+[InstallDelete]
+; Clean upgrade: remove files from an older version or from the other installer type before copying.
+Type: files; Name: "{app}\*.dll"
+Type: files; Name: "{app}\*.json"
+Type: filesandordirs; Name: "{app}\wwwroot"
+Type: filesandordirs; Name: "{app}\runtimes"
 
 [Files]
-Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Startup.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
-Source: "{#BootstrapperPath}"; Flags: dontcopy
+Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{autoprograms}\Zeus Display"; Filename: "{app}\ZeusDisplay.exe"
-Name: "{autodesktop}\Zeus Display"; Filename: "{app}\ZeusDisplay.exe"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 
 [Run]
-Filename: "{app}\ZeusDisplay.exe"; Description: "Open Zeus Display"; Flags: nowait postinstall skipifsilent runascurrentuser
+; The dashboard window needs the Edge WebView2 Runtime (already present on most Windows 10/11 PCs).
+Filename: "{cmd}"; Parameters: "/C winget install --id Microsoft.EdgeWebView2Runtime -e --silent --accept-package-agreements --accept-source-agreements"; Flags: runhidden waituntilterminated; StatusMsg: "Installing the Microsoft Edge WebView2 Runtime..."; Check: not WebView2Installed
+#ifdef Lite
+; The lite build uses a shared .NET runtime instead of bundling its own.
+Filename: "{cmd}"; Parameters: "/C winget install --id Microsoft.DotNet.DesktopRuntime.10 -e --silent --accept-package-agreements --accept-source-agreements"; Flags: runhidden waituntilterminated; StatusMsg: "Installing the .NET 10 Desktop Runtime..."; Check: not DesktopRuntimeInstalled
+#endif
+; Start silently in the tray at every logon, elevated (needed to read CPU temperature).
+Filename: "{sys}\schtasks.exe"; Parameters: "/Create /TN ""ZeusDisplay"" /TR ""\""{app}\{#AppExe}\"" --tray"" /SC ONLOGON /DELAY 0000:15 /RL HIGHEST /F"; Flags: runhidden waituntilterminated; StatusMsg: "Creating the startup task..."
+; Offer to start it now.
+Filename: "{app}\{#AppExe}"; Description: "Start {#AppName} now"; Flags: nowait postinstall skipifsilent runascurrentuser; Check: RuntimeReady
+
+[UninstallRun]
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#AppExe}"; Flags: runhidden; RunOnceId: "KillZeusDisplay"
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""ZeusDisplay"" /F"; Flags: runhidden; RunOnceId: "DeleteZeusTask"
 
 [Code]
-function ValidRuntimeVersion(Root: Integer; const Key: String): Boolean;
+const
+  WebView2Key = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+function WebView2Installed: Boolean;
 var
   Version: String;
 begin
-  Result := RegQueryStringValue(Root, Key, 'pv', Version) and
-    (Version <> '') and (Version <> '0.0.0.0');
+  Result := RegQueryStringValue(HKLM32, WebView2Key, 'pv', Version) or
+            RegQueryStringValue(HKCU, WebView2Key, 'pv', Version);
+  Result := Result and (Version <> '') and (Version <> '0.0.0.0');
 end;
 
-function HasWebView2: Boolean;
+#ifdef Lite
+function DesktopRuntimeInstalled: Boolean;
 var
-  Key: String;
+  Names: TArrayOfString;
+  I: Integer;
 begin
-  Key := 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
-  Result := ValidRuntimeVersion(HKLM32, Key) or ValidRuntimeVersion(HKLM64, Key) or
-    ValidRuntimeVersion(HKCU32, Key) or ValidRuntimeVersion(HKCU64, Key);
+  Result := False;
+  if RegGetValueNames(HKLM64, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App', Names) then
+    for I := 0 to GetArrayLength(Names) - 1 do
+      if Pos('10.', Names[I]) = 1 then
+      begin
+        Result := True;
+        Exit;
+      end;
+end;
+#endif
+
+function RuntimeReady: Boolean;
+begin
+#ifdef Lite
+  Result := DesktopRuntimeInstalled;
+#else
+  Result := True;
+#endif
 end;
 
+// Close a running copy so its files can be replaced during an upgrade.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
 begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Result := '';
-  if HasWebView2 then Exit;
-  WizardForm.StatusLabel.Caption := 'Installing Microsoft Edge WebView2 Runtime...';
-  ExtractTemporaryFile('MicrosoftEdgeWebview2Setup.exe');
-  if not Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'), '/silent /install',
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-  begin
-    Result := 'Could not start WebView2 setup. Install Microsoft Edge WebView2 Runtime and try again.';
-    Exit;
-  end;
-  if (ResultCode <> 0) and (ResultCode <> 3010) then
-  begin
-    Result := Format('WebView2 setup failed (exit code %d). Check your internet connection and try again.', [ResultCode]);
-    Exit;
-  end;
-  NeedsRestart := ResultCode = 3010;
-  if not HasWebView2 then
-    Result := 'WebView2 Runtime was not detected after setup. Restart Windows or install it manually, then try again.';
 end;
 
-function ConfigureStartup(const Action: String): Boolean;
-var
-  ResultCode: Integer;
-  Params: String;
+procedure CurPageChanged(CurPageID: Integer);
 begin
-  Params := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' +
-    ExpandConstant('{app}\installer\Startup.ps1') + '" -Action ' + Action +
-    ' -InstallDirectory "' + ExpandConstant('{app}') + '"';
-  Result := Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-    Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  if Result then Result := ResultCode = 0;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  if CurStep = ssPostInstall then
-  begin
-    if WizardIsTaskSelected('startup') then
-    begin
-      if not ConfigureStartup('Install') then
-        RaiseException('Could not enable Windows startup. Rerun setup as administrator to try again.');
-    end
-    else if not ConfigureStartup('Remove') then
-      RaiseException('Could not remove the Windows startup task.');
-  end;
-end;
-
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-begin
-  if CurUninstallStep = usUninstall then
-    if not ConfigureStartup('Remove') then
-      RaiseException('Could not remove the ZeusDisplay startup task. Close Task Scheduler and retry uninstall.');
-end;
-
-procedure InitializeWizard;
-begin
-  WizardForm.WelcomeLabel2.Caption := 'Install Zeus Display and its required runtime components.' + #13#10 + #13#10 +
-    'PawnIO is not included. Install PawnIO separately to enable CPU temperature readings.';
+#ifdef Lite
+  if (CurPageID = wpFinished) and (not DesktopRuntimeInstalled) then
+    MsgBox('The .NET 10 Desktop Runtime could not be installed automatically.' + #13#10 + #13#10 +
+           'Install the x64 ".NET Desktop Runtime" from https://dotnet.microsoft.com/download/dotnet/10.0, ' +
+           'or use the full installer, which needs nothing extra.', mbError, MB_OK);
+#endif
 end;

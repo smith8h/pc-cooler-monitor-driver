@@ -1,0 +1,94 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create the GitHub release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Work out the version
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') { $v = $env:GITHUB_REF_NAME.TrimStart('v') } else { $v = '0.0.0-dev' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $v"
+
+      - name: Publish full build (self-contained, bundles .NET)
+        shell: pwsh
+        run: >
+          dotnet publish ZeusDisplay.csproj -c Release -r win-x64 --self-contained true
+          -p:Version=${{ steps.ver.outputs.version }} -o publish
+
+      - name: Publish lite build (uses the installed .NET 10 Desktop Runtime)
+        shell: pwsh
+        run: >
+          dotnet publish ZeusDisplay.csproj -c Release -r win-x64 --self-contained false
+          -p:Version=${{ steps.ver.outputs.version }} -o publish-lite
+
+      - name: Check both publish folders
+        shell: pwsh
+        run: |
+          foreach ($dir in 'publish', 'publish-lite') {
+            if (-not (Test-Path "$dir\ZeusDisplay.exe")) { throw "ZeusDisplay.exe missing from $dir" }
+            if (-not (Test-Path "$dir\wwwroot\index.html")) { throw "wwwroot\index.html missing from $dir" }
+            if (-not (Test-Path "$dir\wwwroot\dashboard.js")) { throw "wwwroot\dashboard.js missing from $dir" }
+            $mb = [math]::Round((Get-ChildItem $dir -Recurse -File | Measure-Object Length -Sum).Sum / 1MB, 1)
+            Write-Host "$dir : $mb MB"
+          }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build both installers
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $v = "${{ steps.ver.outputs.version }}"
+          & $iscc "/DAppVersion=$v" installer\ZeusDisplay.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC (full) failed with exit code $LASTEXITCODE" }
+          & $iscc "/DAppVersion=$v" /DLite installer\ZeusDisplay.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC (lite) failed with exit code $LASTEXITCODE" }
+
+      - name: Write checksums
+        shell: pwsh
+        run: |
+          Push-Location dist
+          Get-ChildItem *.exe | ForEach-Object { "$((Get-FileHash $_.Name -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } | Set-Content SHA256SUMS.txt -Encoding ascii
+          Get-Content SHA256SUMS.txt
+          Pop-Location
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeusDisplay-installers
+          path: dist/*
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}"
+          "dist/ZeusDisplay-Setup-${{ steps.ver.outputs.version }}.exe"
+          "dist/ZeusDisplay-Lite-Setup-${{ steps.ver.outputs.version }}.exe"
+          "dist/SHA256SUMS.txt"
+          --title "Zeus Display ${{ github.ref_name }}" --generate-notes

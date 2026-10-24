@@ -1,0 +1,11 @@
+Zeus Display is installed and will start in the tray at every logon.
+
+One more step for CPU temperature (the installer does not include this driver):
+install PawnIO from an administrator PowerShell:
+
+    winget install PawnIO
+
+Then restart Zeus Display from the tray icon. Without PawnIO the CPU temperature reads 0.
+
+If the vendor's own "PC Monitoring" program is still set to start with Windows, remove it
+from your startup entries so the two programs do not fight over the display.
